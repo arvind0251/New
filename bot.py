@@ -51,7 +51,7 @@ def send_welcome(message):
             "/apk - Get APK file"
         )
     else:
-        bot.reply_to(message, "Welcome! Use this bot to access files.")
+        bot.reply_to(message, "Welcome! Use this bot super yodha episode.")
 
 # Save MP3 file (Authorized users only)
 @bot.message_handler(commands=["setmp3"])
