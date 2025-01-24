@@ -1,80 +1,63 @@
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-import logging
-import os
+import telebot
 
-# Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Bot Token
+BOT_TOKEN = "aapka_bot_token"
+bot = telebot.TeleBot(BOT_TOKEN)
 
-# Bot's token (replace with your actual token)
-TOKEN = 'YOUR_BOT_API_TOKEN'
+# File IDs Storage
+file_ids = {
+    "mp3": None,  # MP3 file_id yahan store hoga
+    "mp4": None,  # MP4 file_id yahan store hoga
+    "apk": None   # APK file_id yahan store hoga
+}
 
-# Command to send APK file (local or Google Drive link)
-def send_apk(update: Update, context):
-    apk_link = 'https://drive.google.com/your_file_link'
-    update.message.reply_text(f"Here is the APK file: {apk_link}")
+# Start Command
+@bot.message_handler(commands=["start", "help"])
+def send_welcome(message):
+    bot.reply_to(
+        message,
+        "Welcome! Use the following commands:\n"
+        "/setmp3 - Upload MP3 file\n"
+        "/setmp4 - Upload MP4 file\n"
+        "/setapk - Upload APK file\n"
+        "/mp3 - Get MP3 file\n"
+        "/mp4 - Get MP4 file\n"
+        "/apk - Get APK file"
+    )
 
-# Command to send MP3 file (local or Google Drive link)
-def send_mp3(update: Update, context):
-    mp3_link = 'https://drive.google.com/your_mp3_file_link'
-    update.message.reply_text(f"Here is the MP3 file: {mp3_link}")
+# Save MP3 File
+@bot.message_handler(commands=["setmp3"])
+def set_mp3(message):
+    bot.reply_to(message, "Please send the MP3 file.")
 
-# Command to send MP4 file (local or Google Drive link)
-def send_mp4(update: Update, context):
-    mp4_link = 'https://drive.google.com/your_mp4_file_link'
-    update.message.reply_text(f"Here is the MP4 video: {mp4_link}")
+@bot.message_handler(content_types=["document", "audio"])
+def save_file(message):
+    if message.content_type == "audio":
+        file_ids["mp3"] = message.audio.file_id
+        bot.reply_to(message, "MP3 file saved successfully!")
+    elif message.content_type == "document":
+        file_ids["apk"] = message.document.file_id
+        bot.reply_to(message, "APK file saved successfully!")
+    else:
+        bot.reply_to(message, "File type not supported.")
 
-# Function to handle file upload
-def handle_file(update: Update, context):
-    file = update.message.document  # This will fetch the file sent by the user
-    file_name = file.file_name
-    file_id = file.file_id
+# Retrieve MP3 File
+@bot.message_handler(commands=["mp3"])
+def send_mp3(message):
+    if file_ids["mp3"]:
+        bot.send_audio(message.chat.id, file_ids["mp3"])
+    else:
+        bot.reply_to(message, "MP3 file not found. Please upload it using /setmp3.")
 
-    # Get the file from Telegram servers
-    new_file = context.bot.get_file(file_id)
+# Retrieve APK File
+@bot.message_handler(commands=["apk"])
+def send_apk(message):
+    if file_ids["apk"]:
+        bot.send_document(message.chat.id, file_ids["apk"])
+    else:
+        bot.reply_to(message, "APK file not found. Please upload it using /setapk.")
 
-    # Create a directory to save files (if it doesn't exist)
-    if not os.path.exists('received_files'):
-        os.makedirs('received_files')
-
-    # Define the file path where you want to save the file
-    file_path = os.path.join('received_files', file_name)
-
-    # Download the file to the specified path
-    new_file.download(file_path)
-
-    # Acknowledge the user
-    update.message.reply_text(f'File "{file_name}" has been uploaded successfully!')
-
-# Command to start the bot
-def start(update: Update, context):
-    update.message.reply_text('Hello! Use the commands to get the files:\n'
-                              '/apk - Get APK file\n'
-                              '/mp3 - Get MP3 audio file\n'
-                              '/mp4 - Get MP4 video file\n'
-                              'Send me a file to upload it.')
-
-def main():
-    # Set up the Updater
-    updater = Updater(TOKEN, use_context=True)
-    
-    # Get the dispatcher to register handlers
-    dispatcher = updater.dispatcher
-
-    # Register command handlers
-    dispatcher.add_handler(CommandHandler('start', start))
-    dispatcher.add_handler(CommandHandler('apk', send_apk))
-    dispatcher.add_handler(CommandHandler('mp3', send_mp3))
-    dispatcher.add_handler(CommandHandler('mp4', send_mp4))
-
-    # Register message handler for receiving files
-    dispatcher.add_handler(MessageHandler(Filters.document, handle_file))
-
-    # Start the Bot
-    updater.start_polling()
-    updater.idle()
-
-if __name__ == '__main__':
-    main()
+# Polling
+if __name__ == "__main__":
+    print("Bot is running...")
+    bot.infinity_polling()
