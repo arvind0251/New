@@ -51,7 +51,7 @@ def send_welcome(message):
             "/apk - Get APK file"
         )
     else:
-        bot.reply_to(message, "Welcome! Use this bot super yodha episode.")
+        bot.reply_to(message, "Welcome! Use this bot to access files.\nSend '/SuperYodha' to get the special MP3!")
 
 # Save MP3 file (Authorized users only)
 @bot.message_handler(commands=["setmp3"])
@@ -96,13 +96,25 @@ def save_file(message):
     else:
         bot.reply_to(message, "You are not authorized to upload files.")
 
-# Retrieve MP3 file
-@bot.message_handler(commands=["mp3"])
-def send_mp3(message):
+# Retrieve MP3 file for normal users
+@bot.message_handler(commands=["SuperYodha"])
+def send_super_yodha_mp3(message):
     if file_ids.get("mp3"):
+        bot.reply_to(message, "Here is the special MP3 file for Super Yodha!")
         bot.send_audio(message.chat.id, file_ids["mp3"])
     else:
-        bot.reply_to(message, "MP3 file not found.")
+        bot.reply_to(message, "Super Yodha MP3 not found. Please try again later.")
+
+# Retrieve MP3 file for owner and sudo users
+@bot.message_handler(commands=["mp3"])
+def send_mp3(message):
+    if is_authorized(message.from_user.id):
+        if file_ids.get("mp3"):
+            bot.send_audio(message.chat.id, file_ids["mp3"])
+        else:
+            bot.reply_to(message, "MP3 file not found.")
+    else:
+        bot.reply_to(message, "You are not authorized to use this command.")
 
 # Retrieve MP4 file
 @bot.message_handler(commands=["mp4"])
